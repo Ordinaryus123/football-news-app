@@ -10,6 +10,7 @@ interface Subscriptions {
   leagues: string[];
   teams: string[];
   players: string[];
+  tournaments: string[]; // Add tournaments to the interface
 }
 
 // Define the response type for subscription data
@@ -17,6 +18,7 @@ interface SubscriptionsResponse {
   leagues: string[];
   teams: string[];
   players: string[];
+  tournaments: string[]; // Add tournaments to the response
   error?: string;
 }
 
@@ -31,11 +33,22 @@ function getSubscriptions(): Subscriptions {
     if (!fs.existsSync(subscriptionsFile)) {
       fs.writeFileSync(
         subscriptionsFile,
-        JSON.stringify({ leagues: [], teams: [], players: [] }, null, 2)
+        JSON.stringify(
+          { leagues: [], teams: [], players: [], tournaments: [] },
+          null,
+          2
+        )
       );
     }
     const data = fs.readFileSync(subscriptionsFile, "utf-8");
-    return JSON.parse(data) || { leagues: [], teams: [], players: [] };
+    return (
+      JSON.parse(data) || {
+        leagues: [],
+        teams: [],
+        players: [],
+        tournaments: [],
+      }
+    );
   } catch (error: unknown) {
     // Use 'unknown' for caught errors
     console.error("Error loading subscriptions:", {
@@ -43,7 +56,7 @@ function getSubscriptions(): Subscriptions {
       stack: error instanceof Error ? error.stack : undefined,
       file: subscriptionsFile,
     });
-    return { leagues: [], teams: [], players: [] }; // Fallback to default
+    return { leagues: [], teams: [], players: [], tournaments: [] }; // Fallback to default, including tournaments
   }
 }
 
@@ -83,6 +96,7 @@ export async function GET() {
         leagues: [],
         teams: [],
         players: [],
+        tournaments: [], // Include tournaments in fallback
       },
       { status: 500 }
     );
@@ -129,12 +143,15 @@ export async function POST(req: NextRequest) {
           saveSubscriptions(currentSubs);
         }
         break;
+      case "tournament":
+        if (!currentSubs.tournaments.includes(term)) {
+          currentSubs.tournaments.push(term);
+          saveSubscriptions(currentSubs);
+        }
+        break;
       default:
         return NextResponse.json<SubscriptionOperationResponse>(
-          {
-            error: "Invalid category",
-            success: false,
-          },
+          { error: "Invalid category", success: false },
           { status: 400 }
         );
     }
@@ -144,16 +161,12 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (error: unknown) {
-    // Use 'unknown' for caught errors
     console.error("Error in POST /api/subscriptions:", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
     return NextResponse.json<SubscriptionOperationResponse>(
-      {
-        error: "Failed to subscribe",
-        success: false,
-      },
+      { error: "Failed to subscribe", success: false },
       { status: 500 }
     );
   }
@@ -195,6 +208,12 @@ export async function DELETE(req: NextRequest) {
         break;
       case "player":
         currentSubs.players = currentSubs.players.filter(
+          (item: string) => item !== term
+        );
+        saveSubscriptions(currentSubs);
+        break;
+      case "tournament": // Handle new Tournament category
+        currentSubs.tournaments = currentSubs.tournaments.filter(
           (item: string) => item !== term
         );
         saveSubscriptions(currentSubs);

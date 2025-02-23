@@ -10,9 +10,16 @@ interface NewsResponse {
   news: string[]; // Array of news items (strings)
   error?: string; // Optional error message for failed requests
 }
+interface SubscriptionsResponse {
+  leagues: string[];
+  teams: string[];
+  players: string[];
+  tournaments: string[]; // Ensure tournaments are included
+}
 
 export default function Home() {
   // State for search input, categorized subscriptions, news, timeline news, and category selection
+  const [tournaments, setTournaments] = useState<string[]>([]); // Tournaments user is following
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [leagues, setLeagues] = useState<string[]>([]); // Leagues user is following
   const [teams, setTeams] = useState<string[]>([]); // Teams user is following/subscribed
@@ -30,24 +37,33 @@ export default function Home() {
   useEffect(() => {
     const loadSubscriptions = async () => {
       try {
-        const subs = await getSubscriptionsFromServer(); // Helper function to fetch from server (simplified)
+        const subs = await getSubscriptionsFromServer();
         setLeagues(subs.leagues || []);
         setTeams(subs.teams || []);
         setPlayers(subs.players || []);
-      } catch (error) {
-        console.error("Error loading subscriptions:", error);
+        setTournaments(subs.tournaments || []); // Add tournaments to state
+      } catch (error: unknown) {
+        console.error("Error loading subscriptions:", {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         setError("Failed to load subscriptions.");
       }
     };
     loadSubscriptions();
+
+    // Cleanup function returns void or undefined (satisfies EffectCallback)
+    return () => {
+      // No cleanup needed, return undefined implicitly
+    };
   }, []);
 
   // Helper function to fetch subscriptions (simplified, assumes server actions or API)
-  async function getSubscriptionsFromServer() {
-    const subs = await fetch("/api/subscriptions", { method: "GET" }).then(
-      (res) => res.json()
-    );
-    return subs || { leagues: [], teams: [], players: [] };
+  async function getSubscriptionsFromServer(): Promise<SubscriptionsResponse> {
+    const response = await fetch("/api/subscriptions", { method: "GET" });
+    if (!response.ok) throw new Error("Failed to fetch subscriptions");
+    const subs = await response.json();
+    return subs || { leagues: [], teams: [], players: [], tournaments: [] };
   }
 
   // Handle searching (fetch news without subscribing)
@@ -92,8 +108,10 @@ export default function Home() {
 
     try {
       startTransition(() => {
-        subscribeAction(term, finalCategory).catch((error) => {
-          setError(error.message || "Failed to subscribe.");
+        subscribeAction(term, finalCategory).catch((error: unknown) => {
+          setError(
+            error instanceof Error ? error.message : "Failed to subscribe."
+          );
         });
       });
       // Optimistically update UI
@@ -107,14 +125,25 @@ export default function Home() {
         case "player":
           setPlayers([...players, term]);
           break;
+        case "tournament":
+          setTournaments([...tournaments, term]); // Update tournaments state for "Tournament" category
+          break;
         default:
-          setPlayers([...players, term]); // Fallback for custom categories
+          // Fallback for custom categories (only if not "Tournament")
+          if (finalCategory !== "tournament") {
+            setPlayers([...players, term]); // Default to players for unrecognized custom categories
+          } else {
+            setTournaments([...tournaments, term]); // Ensure custom "Tournament" goes to tournaments
+          }
           break;
       }
       fetchNews(term);
-    } catch (error) {
+    } catch (error: unknown) {
       setError("Failed to subscribe due to an error.");
-      console.error("Subscription error:", error);
+      console.error("Subscription error:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
     setSearchTerm(""); // Clear input
     setCustomCategory(""); // Clear custom category input
@@ -124,19 +153,24 @@ export default function Home() {
   // Handle unsubscribing
   const handleUnsubscribe = (term: string, category: string) => {
     startTransition(() => {
-      unsubscribeAction(term, category).catch((error) => {
-        setError(error.message || "Failed to unsubscribe.");
+      unsubscribeAction(term, category).catch((error: unknown) => {
+        setError(
+          error instanceof Error ? error.message : "Failed to unsubscribe"
+        );
       });
       // Optimistically update UI
       switch (category.toLowerCase()) {
         case "league":
-          setLeagues(leagues.filter((item) => item !== term));
+          setLeagues(leagues.filter((item: string) => item !== term));
           break;
         case "team":
-          setTeams(teams.filter((item) => item !== term));
+          setTeams(teams.filter((item: string) => item !== term));
           break;
         case "player":
-          setPlayers(players.filter((item) => item !== term));
+          setPlayers(players.filter((item: string) => item !== term));
+          break;
+        case "tournament":
+          setTournaments(tournaments.filter((item: string) => item !== term));
           break;
       }
     });
@@ -244,11 +278,13 @@ export default function Home() {
     showAll ? items : items.slice(0, 3);
   //BURDAN YAPIŞTIRDIK
 
+  // ... (previous imports, interfaces, and function definitions remain the same)
+
   return (
     <div className="flex h-screen">
       {/* Sidebar for Subscriptions and Timeline (Left Side) */}
       <aside className="w-72 bg-gradient-to-b from-gray-100 to-gray-200 p-6 shadow-lg rounded-r-lg border-r border-gray-300">
-        {/* Move Timeline button to the top */}
+        {/* Timeline button at the top */}
         <Link
           href="/timeline"
           className="block w-full p-3 mb-4 bg-blue-500 text-white rounded-lg text-lg text-center cursor-pointer shadow-md hover:bg-blue-600 transition-colors"
@@ -385,6 +421,49 @@ export default function Home() {
           </ul>
         )}
 
+        <h2 className="text-2xl text-gray-800 mb-4 font-bold border-b border-gray-300 pb-2">
+          Tournaments
+        </h2>
+        {tournaments.length === 0 ? ( // Use tournaments state
+          <p className="text-gray-500 italic">No tournaments followed.</p>
+        ) : (
+          <ul className="list-none p-0 m-0 mb-4">
+            {getVisibleItems(tournaments).map(
+              (
+                tournament: string // Use tournaments state
+              ) => (
+                <li
+                  key={tournament}
+                  className="bg-white p-3 mb-2 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
+                  onClick={() => fetchNews(tournament)}
+                >
+                  <span className="text-gray-800">{tournament}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUnsubscribe(tournament, "tournament");
+                    }}
+                    disabled={isPending}
+                    className={`text-red-500 hover:text-red-700 ml-2 ${
+                      isPending ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    ×
+                  </button>
+                </li>
+              )
+            )}
+            {tournaments.length > 3 && !showAll && (
+              <li
+                className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer text-center text-blue-500"
+                onClick={() => (window.location.href = "/subscriptions")}
+              >
+                ...
+              </li>
+            )}
+          </ul>
+        )}
+
         {/* Reset Timeline Button (only visible if timeline news exists on home page) */}
         {timelineNews.length > 0 && (
           <button
@@ -430,6 +509,7 @@ export default function Home() {
             <option value="League">League</option>
             <option value="Team">Team</option>
             <option value="Player">Player</option>
+            <option value="Tournament">Tournament</option> {/* New option */}
             <option value="Other">Other (Custom)</option>
           </select>
           {isCustom && (

@@ -12,27 +12,37 @@ interface Subscriptions {
   leagues: string[];
   teams: string[];
   players: string[];
+  tournaments: string[]; // Add tournaments to the interface
 }
 
 function getSubscriptions(): Subscriptions {
   try {
-    // Check if the file exists; if not, create it with default data
     if (!fs.existsSync(subscriptionsFile)) {
       fs.writeFileSync(
         subscriptionsFile,
-        JSON.stringify({ leagues: [], teams: [], players: [] }, null, 2)
+        JSON.stringify(
+          { leagues: [], teams: [], players: [], tournaments: [] },
+          null,
+          2
+        )
       );
     }
     const data = fs.readFileSync(subscriptionsFile, "utf-8");
-    return JSON.parse(data) || { leagues: [], teams: [], players: [] };
+    return (
+      JSON.parse(data) || {
+        leagues: [],
+        teams: [],
+        players: [],
+        tournaments: [],
+      }
+    );
   } catch (error: unknown) {
-    // Use 'unknown' for caught errors
     console.error("Error loading subscriptions:", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       file: subscriptionsFile,
     });
-    return { leagues: [], teams: [], players: [] }; // Fallback to default
+    return { leagues: [], teams: [], players: [], tournaments: [] }; // Fallback with tournaments
   }
 }
 
@@ -40,7 +50,6 @@ function saveSubscriptions(subscriptions: Subscriptions): void {
   try {
     fs.writeFileSync(subscriptionsFile, JSON.stringify(subscriptions, null, 2));
   } catch (error: unknown) {
-    // Use 'unknown' for caught errors
     console.error("Error saving subscriptions:", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
@@ -77,13 +86,18 @@ export async function subscribeAction(term: string, category: string) {
           saveSubscriptions(currentSubs);
         }
         break;
+      case "tournament": // Handle new Tournament category
+        if (!currentSubs.tournaments.includes(term)) {
+          currentSubs.tournaments.push(term);
+          saveSubscriptions(currentSubs);
+        }
+        break;
       default:
         throw new Error("Invalid category");
     }
 
     revalidatePath("/");
   } catch (error: unknown) {
-    // Use 'unknown' for caught errors
     console.error("Error subscribing:", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
@@ -117,13 +131,18 @@ export async function unsubscribeAction(term: string, category: string) {
         );
         saveSubscriptions(currentSubs);
         break;
+      case "tournament": // Handle new Tournament category
+        currentSubs.tournaments = currentSubs.tournaments.filter(
+          (item: string) => item !== term
+        );
+        saveSubscriptions(currentSubs);
+        break;
       default:
         throw new Error("Invalid category");
     }
 
     revalidatePath("/subscriptions");
   } catch (error: unknown) {
-    // Use 'unknown' for caught errors
     console.error("Error unsubscribing:", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
