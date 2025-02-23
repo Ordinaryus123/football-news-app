@@ -1,6 +1,11 @@
 {
   "leagues": [],
-  "teams": [],
+  "teams": [
+    "messi",
+    "ronaldo",
+    "haaland",
+    "salah"
+  ],
   "players": [],
   "tournaments": [
     "champions league"

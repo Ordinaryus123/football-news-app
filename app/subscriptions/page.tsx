@@ -17,12 +17,15 @@ interface SubscriptionsResponse {
   leagues: string[];
   teams: string[];
   players: string[];
+  tournaments: string[]; // Add tournaments to ensure they’re included in the response
+  error?: string;
 }
 
 export default function Subscriptions() {
   const [leagues, setLeagues] = useState<string[]>([]); // Leagues user is following
   const [teams, setTeams] = useState<string[]>([]); // Teams user is following/subscribed
   const [players, setPlayers] = useState<string[]>([]); // Players user is subscribed to
+  const [tournaments, setTournaments] = useState<string[]>([]); // Tournaments user is following
   const [news, setNews] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null); // Ensure error is string | null
 
@@ -37,12 +40,12 @@ export default function Subscriptions() {
         setLeagues(subs.leagues || []);
         setTeams(subs.teams || []);
         setPlayers(subs.players || []);
+        setTournaments(subs.tournaments || []); // Ensure tournaments are set
       } catch (error: unknown) {
-        // Use 'unknown' for caught errors
         console.error("Error fetching subscriptions:", {
           message: error instanceof Error ? error.message : String(error),
-          status: response?.status, // Safe access with optional chaining
-          response: response?.status ? await response.json() : null, // Safe access with optional chaining
+          status: response?.status,
+          response: response?.status ? await response.json() : null,
         });
         setError("Failed to load subscriptions.");
       }
@@ -221,6 +224,35 @@ export default function Subscriptions() {
                 onClick={(e) => {
                   e.stopPropagation();
                   handleUnsubscribe(player, "player");
+                }}
+                className="text-red-500 hover:text-red-700 ml-2"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <h2 className="text-2xl text-gray-800 mb-3 font-bold border-b border-gray-300 pb-2">
+        Tournaments
+      </h2>
+      {tournaments.length === 0 ? (
+        <p className="text-gray-500 italic text-center">
+          No tournaments followed.
+        </p>
+      ) : (
+        <ul className="list-none p-0 m-0 mb-4">
+          {tournaments.map((tournament: string) => (
+            <li
+              key={tournament}
+              className="bg-white p-3 mb-3 rounded-lg border border-gray-300 shadow-sm hover:bg-gray-200 transition-colors flex justify-between items-center cursor-pointer"
+              onClick={() => fetchNewsForSubscription(tournament)}
+            >
+              <span className="text-gray-800">{tournament}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUnsubscribe(tournament, "tournament");
                 }}
                 className="text-red-500 hover:text-red-700 ml-2"
               >
