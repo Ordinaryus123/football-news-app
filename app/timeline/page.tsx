@@ -5,17 +5,19 @@ import Link from "next/link";
 import axios from "axios";
 
 // Define the type for the API response
+// Define the type for the API response
+// Define the type for the API response
 interface NewsResponse {
-  news: { title: string; date: string }[];
+  news: { id: string; title: string; date: string; url: string }[];
   error?: string;
 }
 
 export default function Timeline() {
   const [timelineNews, setTimelineNews] = useState<
-    { title: string; date: string }[]
+    { id: string; title: string; date: string; url: string }[]
   >([]);
   const [upcomingGames, setUpcomingGames] = useState<
-    { title: string; date: string }[]
+    { id: string; title: string; date: string; url: string }[]
   >([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,8 +45,10 @@ export default function Timeline() {
         setError(newsResponse.data.error);
         setTimelineNews([
           {
+            id: `${Date.now()}`,
             title: "Couldn’t fetch timeline news.",
             date: new Date().toISOString().split("T")[0],
+            url: "https://example.com/placeholder",
           },
         ]);
       }
@@ -71,24 +75,33 @@ export default function Timeline() {
         );
         setUpcomingGames([
           {
+            id: `${Date.now()}`,
             title: "Couldn’t fetch upcoming games.",
             date: new Date().toISOString().split("T")[0],
+            url: "https://example.com/placeholder",
           },
         ]);
       }
-    } catch (error: any) {
-      console.error("Error fetching timeline data:", error);
+    } catch (error: unknown) {
+      console.error("Error fetching timeline data:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       setError("Failed to fetch timeline data.");
       setTimelineNews([
         {
+          id: `${Date.now()}`,
           title: "Couldn’t fetch timeline news.",
           date: new Date().toISOString().split("T")[0],
+          url: "https://example.com/placeholder",
         },
       ]);
       setUpcomingGames([
         {
+          id: `${Date.now()}`,
           title: "Couldn’t fetch upcoming games.",
           date: new Date().toISOString().split("T")[0],
+          url: "https://example.com/placeholder",
         },
       ]);
     }
@@ -122,7 +135,10 @@ export default function Timeline() {
         ) : (
           <ul className="list-none p-0 m-0">
             {timelineNews.map(
-              (item: { title: string; date: string }, index: number) => (
+              (
+                item: { id: string; title: string; date: string; url: string },
+                index: number
+              ) => (
                 <li
                   key={index}
                   className="bg-white p-4 mb-4 rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col gap-2"
@@ -132,6 +148,25 @@ export default function Timeline() {
                   </div>
                   <div className="text-sm text-gray-500 italic">
                     {item.date}
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline text-sm"
+                    >
+                      Explore More
+                    </a>
+                    <Link
+                      href={{
+                        pathname: `/news/${item.id}`,
+                        query: { title: item.title },
+                      }}
+                      className="text-green-500 hover:underline text-sm"
+                    >
+                      Brief Summary
+                    </Link>
                   </div>
                 </li>
               )
@@ -150,7 +185,10 @@ export default function Timeline() {
         ) : (
           <ul className="list-none p-0 m-0">
             {upcomingGames.map(
-              (game: { title: string; date: string }, index: number) => (
+              (
+                game: { id: string; title: string; date: string; url: string },
+                index: number
+              ) => (
                 <li
                   key={index}
                   className="bg-white p-4 mb-4 rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col gap-2"
@@ -160,6 +198,25 @@ export default function Timeline() {
                   </div>
                   <div className="text-sm text-gray-500 italic">
                     {game.date}
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <a
+                      href={game.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline text-sm"
+                    >
+                      Explore More
+                    </a>
+                    <Link
+                      href={{
+                        pathname: `/news/${game.id}`,
+                        query: { title: game.title },
+                      }}
+                      className="text-green-500 hover:underline text-sm"
+                    >
+                      Brief Summary
+                    </Link>
                   </div>
                 </li>
               )

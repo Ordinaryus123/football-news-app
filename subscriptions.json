@@ -1,13 +1,13 @@
 {
-  "leagues": [],
+  "leagues": [
+    "La liga",
+    "premier league",
+    "trendyol Super lig",
+    "serie a"
+  ],
   "teams": [
-    "messi",
-    "ronaldo",
-    "haaland",
-    "salah"
+    "Fenerbahce"
   ],
   "players": [],
-  "tournaments": [
-    "champions league"
-  ]
+  "tournaments": []
 }

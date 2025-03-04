@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
 // Define the type for the API response
+// Define the type for the API response
+// Define the type for the API response
 interface NewsResponse {
-  news: { title: string; date: string }[];
+  news: { id: string; title: string; date: string; url: string }[];
   error?: string;
 }
 // Define the type for the xAI API response (compatible with OpenAI’s ChatCompletion)
@@ -55,13 +57,13 @@ export async function POST(req: NextRequest) {
     // Construct the prompt for Grok based on the query
     let prompt: string;
     if (q.toLowerCase().includes("latest football news")) {
-      prompt = `Provide a concise summary of the latest football (soccer) news. Return only the news items, one per line, in a simple list format. Include the date of each news item in the format YYYY-MM-DD, separated by "|". For example: "News item 1 | 2025-03-01". Do not include any additional text or formatting.`;
+      prompt = `Provide a concise summary of the latest football (soccer) news. Return only the news items, one per line, in a simple list format. Include the date of each news item in the format YYYY-MM-DD, and a URL to a relevant article, separated by "|". For example: "News item 1 | 2025-03-01 | https://example.com/news1". Do not include any additional text or formatting. If no URL is available, use "https://example.com/placeholder".`;
     } else if (
       q.toLowerCase().includes("upcoming important football matches in europe")
     ) {
-      prompt = `List upcoming important football matches in Europe for the next 7 days, one per line, include dates and teams in the format "Match details | YYYY-MM-DD", no extra text or formatting.`;
+      prompt = `List upcoming important football matches in Europe for the next 7 days, one per line, include dates and teams in the format "Match details | YYYY-MM-DD | https://example.com/match", no extra text or formatting. If no URL is available, use "https://example.com/placeholder".`;
     } else {
-      prompt = `Provide a concise summary of the latest football (soccer) news for ${q}. Return only the news items, one per line, in a simple list format. Include the date of each news item in the format YYYY-MM-DD, separated by "|". For example: "News item 1 | 2025-03-01". Do not include any additional text or formatting.`;
+      prompt = `Provide a concise summary of the latest football (soccer) news for ${q}. Return only the news items, one per line, in a simple list format. Include the date of each news item in the format YYYY-MM-DD, and a URL to a relevant article, separated by "|". For example: "News item 1 | 2025-03-01 | https://example.com/news1". Do not include any additional text or formatting. If no URL is available, use "https://example.com/placeholder".`;
     }
 
     // Call xAI’s /v1/chat/completions endpoint using OpenAI SDK
@@ -79,14 +81,20 @@ export async function POST(req: NextRequest) {
     });
 
     // Extract news summaries from the response
+    // Extract news summaries from the response
     const newsContent = completion.choices[0]?.message?.content || "";
     const newsSummaries = newsContent
       .split("\n")
       .map((line) => line.trim())
       .filter((line) => line.length > 0)
-      .map((line) => {
-        const [title, date] = line.split("|").map((part) => part.trim());
-        return { title, date: date || new Date().toISOString().split("T")[0] }; // Fallback to current date if missing
+      .map((line, index) => {
+        const [title, date, url] = line.split("|").map((part) => part.trim());
+        return {
+          id: `${index}-${Date.now()}`, // Simple unique ID based on index and timestamp
+          title,
+          date: date || new Date().toISOString().split("T")[0],
+          url: url || "https://example.com/placeholder",
+        };
       });
 
     if (newsSummaries.length === 0) {

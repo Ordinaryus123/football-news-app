@@ -7,8 +7,10 @@ import { subscribeAction, unsubscribeAction } from "./actions"; // Import both s
 
 // Define the type for the API response
 // Define the type for the API response
+// Define the type for the API response
+// Define the type for the API response
 interface NewsResponse {
-  news: { title: string; date: string }[];
+  news: { id: string; title: string; date: string; url: string }[];
   error?: string;
 }
 interface SubscriptionsResponse {
@@ -25,16 +27,22 @@ export default function Home() {
   const [leagues, setLeagues] = useState<string[]>([]); // Leagues user is following
   const [teams, setTeams] = useState<string[]>([]); // Teams user is following/subscribed
   const [players, setPlayers] = useState<string[]>([]); // Players user is subscribed to
-  const [news, setNews] = useState<{ title: string; date: string }[]>([]); // News from search/subscribe
+  const [news, setNews] = useState<
+    { id: string; title: string; date: string; url: string }[]
+  >([]); // News from search/subscribe
   const [timelineNews, setTimelineNews] = useState<
-    { title: string; date: string }[]
+    { id: string; title: string; date: string; url: string }[]
   >([]); // Latest football news from timeline
   const [error, setError] = useState<string | null>(null); // State for error messages
-  const [showAll, setShowAll] = useState<boolean>(false); // State for radio button toggle
   const [category, setCategory] = useState<string>("Team"); // Default category for subscription
   const [customCategory, setCustomCategory] = useState<string>(""); // State for custom category
   const [isCustom, setIsCustom] = useState<boolean>(false); // Track if custom category is selected
   const [isPending, startTransition] = useTransition(); // For optimistic UI updates with Server Actions
+  const [isFollowingOpen, setIsFollowingOpen] = useState<boolean>(false); //isFollowingOpen tracks whether the "Following" dropdown is expanded (true) or collapsed (false). //Initialized to false so the dropdown is closed by default.
+  const [isLeaguesOpen, setIsLeaguesOpen] = useState<boolean>(false);
+  const [isTeamsOpen, setIsTeamsOpen] = useState<boolean>(false);
+  const [isPlayersOpen, setIsPlayersOpen] = useState<boolean>(false);
+  const [isTournamentsOpen, setIsTournamentsOpen] = useState<boolean>(false);
 
   // Fetch subscriptions on load
   useEffect(() => {
@@ -197,13 +205,14 @@ export default function Home() {
         setNews((prevNews) => [
           ...prevNews,
           {
+            id: `${Date.now()}`,
             title: "Couldn’t fetch news.",
             date: new Date().toISOString().split("T")[0],
+            url: "https://example.com/placeholder",
           },
         ]);
       }
     } catch (error: unknown) {
-      // Use 'unknown' for caught errors, then narrow
       if (error instanceof AxiosError) {
         console.error("Error fetching news:", {
           message: error.message,
@@ -224,8 +233,10 @@ export default function Home() {
       setNews((prevNews) => [
         ...prevNews,
         {
+          id: `${Date.now()}`,
           title: "Couldn’t fetch news.",
           date: new Date().toISOString().split("T")[0],
+          url: "https://example.com/placeholder",
         },
       ]);
     }
@@ -247,13 +258,14 @@ export default function Home() {
         setError(response.data.error);
         setTimelineNews([
           {
+            id: `${Date.now()}`,
             title: "Couldn’t fetch timeline news.",
             date: new Date().toISOString().split("T")[0],
+            url: "https://example.com/placeholder",
           },
         ]);
       }
     } catch (error: unknown) {
-      // Use 'unknown' for caught errors, then narrow
       if (error instanceof AxiosError) {
         console.error("Error fetching timeline news:", {
           message: error.message,
@@ -273,8 +285,10 @@ export default function Home() {
       }
       setTimelineNews([
         {
+          id: `${Date.now()}`,
           title: "Couldn’t fetch timeline news.",
           date: new Date().toISOString().split("T")[0],
+          url: "https://example.com/placeholder",
         },
       ]);
     }
@@ -298,9 +312,9 @@ export default function Home() {
     }
   };
 
-  // Get visible subscriptions for each category (up to 3 per category if not showing all)
-  const getVisibleItems = (items: string[]) =>
-    showAll ? items : items.slice(0, 3);
+  // Get visible subscriptions for each category (up to 3 per category if not showing all) REMOVED
+  //const getVisibleItems = (items: string[]) =>
+  //showAll ? items : items.slice(0, 3);
   //BURDAN YAPIŞTIRDIK
 
   // ... (previous imports, interfaces, and function definitions remain the same)
@@ -317,177 +331,203 @@ export default function Home() {
           Timeline
         </Link>
 
+        {/* Following Dropdown */}
         <div className="mb-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={showAll}
-              onChange={(e) => setShowAll(e.target.checked)}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <span className="text-gray-800 font-medium">Show All</span>
-          </label>
+          <button
+            onClick={() => setIsFollowingOpen(!isFollowingOpen)}
+            className="w-full p-3 bg-gray-300 text-gray-800 rounded-lg text-lg font-bold text-left flex justify-between items-center shadow-md hover:bg-gray-400 transition-colors"
+          >
+            Following
+            <span>{isFollowingOpen ? "▲" : "▼"}</span>
+          </button>
+          {isFollowingOpen && (
+            <div className="mt-2 space-y-2">
+              {/* All Subscriptions Field */}
+              <div>
+                <Link
+                  href="/subscriptions"
+                  className="block w-full p-2 bg-gray-200 text-gray-800 rounded-lg text-md font-semibold text-left hover:bg-gray-300 transition-colors"
+                >
+                  All Subscriptions
+                </Link>
+              </div>
+
+              {/* Leagues Dropdown */}
+              <div>
+                <button
+                  onClick={() => setIsLeaguesOpen(!isLeaguesOpen)}
+                  className="w-full p-2 bg-gray-200 text-gray-800 rounded-lg text-md font-semibold text-left flex justify-between items-center hover:bg-gray-300 transition-colors"
+                >
+                  Leagues
+                  <span>{isLeaguesOpen ? "▲" : "▼"}</span>
+                </button>
+                {isLeaguesOpen && (
+                  <div className="mt-1 pl-4 max-h-40 overflow-y-auto">
+                    {leagues.length === 0 ? (
+                      <p className="text-gray-500 italic">
+                        No leagues followed.
+                      </p>
+                    ) : (
+                      <ul className="list-none p-0 m-0">
+                        {leagues.map((league: string) => (
+                          <li
+                            key={league}
+                            className="bg-white p-2 mb-1 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
+                            onClick={() => fetchNews(league)}
+                          >
+                            <span className="text-gray-800">{league}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnsubscribe(league, "league");
+                              }}
+                              disabled={isPending}
+                              className={`text-red-500 hover:text-red-700 ml-2 ${
+                                isPending ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Teams Dropdown */}
+              <div>
+                <button
+                  onClick={() => setIsTeamsOpen(!isTeamsOpen)}
+                  className="w-full p-2 bg-gray-200 text-gray-800 rounded-lg text-md font-semibold text-left flex justify-between items-center hover:bg-gray-300 transition-colors"
+                >
+                  Teams
+                  <span>{isTeamsOpen ? "▲" : "▼"}</span>
+                </button>
+                {isTeamsOpen && (
+                  <div className="mt-1 pl-4 max-h-40 overflow-y-auto">
+                    {teams.length === 0 ? (
+                      <p className="text-gray-500 italic">No teams followed.</p>
+                    ) : (
+                      <ul className="list-none p-0 m-0">
+                        {teams.map((team: string) => (
+                          <li
+                            key={team}
+                            className="bg-white p-2 mb-1 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
+                            onClick={() => fetchNews(team)}
+                          >
+                            <span className="text-gray-800">{team}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnsubscribe(team, "team");
+                              }}
+                              disabled={isPending}
+                              className={`text-red-500 hover:text-red-700 ml-2 ${
+                                isPending ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Players Dropdown */}
+              <div>
+                <button
+                  onClick={() => setIsPlayersOpen(!isPlayersOpen)}
+                  className="w-full p-2 bg-gray-200 text-gray-800 rounded-lg text-md font-semibold text-left flex justify-between items-center hover:bg-gray-300 transition-colors"
+                >
+                  Players
+                  <span>{isPlayersOpen ? "▲" : "▼"}</span>
+                </button>
+                {isPlayersOpen && (
+                  <div className="mt-1 pl-4 max-h-40 overflow-y-auto">
+                    {players.length === 0 ? (
+                      <p className="text-gray-500 italic">
+                        No players subscribed.
+                      </p>
+                    ) : (
+                      <ul className="list-none p-0 m-0">
+                        {players.map((player: string) => (
+                          <li
+                            key={player}
+                            className="bg-white p-2 mb-1 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
+                            onClick={() => fetchNews(player)}
+                          >
+                            <span className="text-gray-800">{player}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnsubscribe(player, "player");
+                              }}
+                              disabled={isPending}
+                              className={`text-red-500 hover:text-red-700 ml-2 ${
+                                isPending ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Tournaments Dropdown */}
+              <div>
+                <button
+                  onClick={() => setIsTournamentsOpen(!isTournamentsOpen)}
+                  className="w-full p-2 bg-gray-200 text-gray-800 rounded-lg text-md font-semibold text-left flex justify-between items-center hover:bg-gray-300 transition-colors"
+                >
+                  Tournaments
+                  <span>{isTournamentsOpen ? "▲" : "▼"}</span>
+                </button>
+                {isTournamentsOpen && (
+                  <div className="mt-1 pl-4 max-h-40 overflow-y-auto">
+                    {tournaments.length === 0 ? (
+                      <p className="text-gray-500 italic">
+                        No tournaments followed.
+                      </p>
+                    ) : (
+                      <ul className="list-none p-0 m-0">
+                        {tournaments.map((tournament: string) => (
+                          <li
+                            key={tournament}
+                            className="bg-white p-2 mb-1 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
+                            onClick={() => fetchNews(tournament)}
+                          >
+                            <span className="text-gray-800">{tournament}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnsubscribe(tournament, "tournament");
+                              }}
+                              disabled={isPending}
+                              className={`text-red-500 hover:text-red-700 ml-2 ${
+                                isPending ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-
-        <h2 className="text-2xl text-gray-800 mb-4 font-bold border-b border-gray-300 pb-2">
-          Leagues
-        </h2>
-        {leagues.length === 0 ? (
-          <p className="text-gray-500 italic">No leagues followed.</p>
-        ) : (
-          <ul className="list-none p-0 m-0 mb-4">
-            {getVisibleItems(leagues).map((league: string) => (
-              <li
-                key={league}
-                className="bg-white p-3 mb-2 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
-                onClick={() => fetchNews(league)}
-              >
-                <span className="text-gray-800">{league}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleUnsubscribe(league, "league");
-                  }}
-                  disabled={isPending}
-                  className={`text-red-500 hover:text-red-700 ml-2 ${
-                    isPending ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-            {leagues.length > 3 && !showAll && (
-              <li
-                className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer text-center text-blue-500"
-                onClick={() => (window.location.href = "/subscriptions")}
-              >
-                ...
-              </li>
-            )}
-          </ul>
-        )}
-
-        <h2 className="text-2xl text-gray-800 mb-4 font-bold border-b border-gray-300 pb-2">
-          Teams
-        </h2>
-        {teams.length === 0 ? (
-          <p className="text-gray-500 italic">No teams followed.</p>
-        ) : (
-          <ul className="list-none p-0 m-0 mb-4">
-            {getVisibleItems(teams).map((team: string) => (
-              <li
-                key={team}
-                className="bg-white p-3 mb-2 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
-                onClick={() => fetchNews(team)}
-              >
-                <span className="text-gray-800">{team}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleUnsubscribe(team, "team");
-                  }}
-                  disabled={isPending}
-                  className={`text-red-500 hover:text-red-700 ml-2 ${
-                    isPending ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-            {teams.length > 3 && !showAll && (
-              <li
-                className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer text-center text-blue-500"
-                onClick={() => (window.location.href = "/subscriptions")}
-              >
-                ...
-              </li>
-            )}
-          </ul>
-        )}
-
-        <h2 className="text-2xl text-gray-800 mb-4 font-bold border-b border-gray-300 pb-2">
-          Players
-        </h2>
-        {players.length === 0 ? (
-          <p className="text-gray-500 italic">No players subscribed.</p>
-        ) : (
-          <ul className="list-none p-0 m-0 mb-4">
-            {getVisibleItems(players).map((player: string) => (
-              <li
-                key={player}
-                className="bg-white p-3 mb-2 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
-                onClick={() => fetchNews(player)}
-              >
-                <span className="text-gray-800">{player}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleUnsubscribe(player, "player");
-                  }}
-                  disabled={isPending}
-                  className={`text-red-500 hover:text-red-700 ml-2 ${
-                    isPending ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-            {players.length > 3 && !showAll && (
-              <li
-                className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer text-center text-blue-500"
-                onClick={() => (window.location.href = "/subscriptions")}
-              >
-                ...
-              </li>
-            )}
-          </ul>
-        )}
-
-        <h2 className="text-2xl text-gray-800 mb-4 font-bold border-b border-gray-300 pb-2">
-          Tournaments
-        </h2>
-        {tournaments.length === 0 ? ( // Use tournaments state
-          <p className="text-gray-500 italic">No tournaments followed.</p>
-        ) : (
-          <ul className="list-none p-0 m-0 mb-4">
-            {getVisibleItems(tournaments).map(
-              (
-                tournament: string // Use tournaments state
-              ) => (
-                <li
-                  key={tournament}
-                  className="bg-white p-3 mb-2 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
-                  onClick={() => fetchNews(tournament)}
-                >
-                  <span className="text-gray-800">{tournament}</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleUnsubscribe(tournament, "tournament");
-                    }}
-                    disabled={isPending}
-                    className={`text-red-500 hover:text-red-700 ml-2 ${
-                      isPending ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    ×
-                  </button>
-                </li>
-              )
-            )}
-            {tournaments.length > 3 && !showAll && (
-              <li
-                className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer text-center text-blue-500"
-                onClick={() => (window.location.href = "/subscriptions")}
-              >
-                ...
-              </li>
-            )}
-          </ul>
-        )}
 
         {/* Reset Timeline Button (only visible if timeline news exists on home page) */}
         {timelineNews.length > 0 && (
@@ -591,7 +631,15 @@ export default function Home() {
           ) : (
             <ul className="list-none p-0 m-0">
               {news.map(
-                (item: { title: string; date: string }, index: number) => (
+                (
+                  item: {
+                    id: string;
+                    title: string;
+                    date: string;
+                    url: string;
+                  },
+                  index: number
+                ) => (
                   <li
                     key={index}
                     className="bg-white p-4 mb-4 rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col gap-2"
@@ -601,6 +649,25 @@ export default function Home() {
                     </div>
                     <div className="text-sm text-gray-500 italic">
                       {item.date}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline text-sm"
+                      >
+                        Explore More
+                      </a>
+                      <Link
+                        href={{
+                          pathname: `/news/${item.id}`,
+                          query: { title: item.title },
+                        }}
+                        className="text-green-500 hover:underline text-sm"
+                      >
+                        Brief Summary
+                      </Link>
                     </div>
                   </li>
                 )
@@ -617,7 +684,15 @@ export default function Home() {
             </h2>
             <ul className="list-none p-0 m-0">
               {timelineNews.map(
-                (item: { title: string; date: string }, index: number) => (
+                (
+                  item: {
+                    id: string;
+                    title: string;
+                    date: string;
+                    url: string;
+                  },
+                  index: number
+                ) => (
                   <li
                     key={index}
                     className="bg-white p-4 mb-4 rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col gap-2"
@@ -627,6 +702,25 @@ export default function Home() {
                     </div>
                     <div className="text-sm text-gray-500 italic">
                       {item.date}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline text-sm"
+                      >
+                        Explore More
+                      </a>
+                      <Link
+                        href={{
+                          pathname: `/news/${item.id}`,
+                          query: { title: item.title },
+                        }}
+                        className="text-green-500 hover:underline text-sm"
+                      >
+                        Brief Summary
+                      </Link>
                     </div>
                   </li>
                 )
