@@ -6,9 +6,10 @@ import Link from "next/link";
 import { subscribeAction, unsubscribeAction } from "./actions"; // Import both subscribeAction and unsubscribeAction
 
 // Define the type for the API response
+// Define the type for the API response
 interface NewsResponse {
-  news: string[]; // Array of news items (strings)
-  error?: string; // Optional error message for failed requests
+  news: { title: string; date: string }[];
+  error?: string;
 }
 interface SubscriptionsResponse {
   leagues: string[];
@@ -24,8 +25,10 @@ export default function Home() {
   const [leagues, setLeagues] = useState<string[]>([]); // Leagues user is following
   const [teams, setTeams] = useState<string[]>([]); // Teams user is following/subscribed
   const [players, setPlayers] = useState<string[]>([]); // Players user is subscribed to
-  const [news, setNews] = useState<string[]>([]); // News from search/subscribe
-  const [timelineNews, setTimelineNews] = useState<string[]>([]); // Latest football news from timeline
+  const [news, setNews] = useState<{ title: string; date: string }[]>([]); // News from search/subscribe
+  const [timelineNews, setTimelineNews] = useState<
+    { title: string; date: string }[]
+  >([]); // Latest football news from timeline
   const [error, setError] = useState<string | null>(null); // State for error messages
   const [showAll, setShowAll] = useState<boolean>(false); // State for radio button toggle
   const [category, setCategory] = useState<string>("Team"); // Default category for subscription
@@ -191,7 +194,13 @@ export default function Home() {
         setNews((prevNews) => [...prevNews, ...response.data.news]);
       } else if (response.data.error) {
         setError(response.data.error);
-        setNews((prevNews) => [...prevNews, "Couldn’t fetch news."]);
+        setNews((prevNews) => [
+          ...prevNews,
+          {
+            title: "Couldn’t fetch news.",
+            date: new Date().toISOString().split("T")[0],
+          },
+        ]);
       }
     } catch (error: unknown) {
       // Use 'unknown' for caught errors, then narrow
@@ -212,7 +221,13 @@ export default function Home() {
         });
         setError("Failed to fetch news.");
       }
-      setNews((prevNews) => [...prevNews, "Couldn’t fetch news."]);
+      setNews((prevNews) => [
+        ...prevNews,
+        {
+          title: "Couldn’t fetch news.",
+          date: new Date().toISOString().split("T")[0],
+        },
+      ]);
     }
   };
 
@@ -230,7 +245,12 @@ export default function Home() {
         setTimelineNews(response.data.news);
       } else if (response.data.error) {
         setError(response.data.error);
-        setTimelineNews(["Couldn’t fetch timeline news."]);
+        setTimelineNews([
+          {
+            title: "Couldn’t fetch timeline news.",
+            date: new Date().toISOString().split("T")[0],
+          },
+        ]);
       }
     } catch (error: unknown) {
       // Use 'unknown' for caught errors, then narrow
@@ -251,7 +271,12 @@ export default function Home() {
         });
         setError("Failed to fetch timeline news.");
       }
-      setTimelineNews(["Couldn’t fetch timeline news."]);
+      setTimelineNews([
+        {
+          title: "Couldn’t fetch timeline news.",
+          date: new Date().toISOString().split("T")[0],
+        },
+      ]);
     }
   };
 
@@ -565,14 +590,21 @@ export default function Home() {
             </p>
           ) : (
             <ul className="list-none p-0 m-0">
-              {news.map((item: string, index: number) => (
-                <li
-                  key={index}
-                  className="bg-white p-3 mb-3 rounded-lg border border-gray-300 shadow-sm hover:scale-102 transition-transform"
-                >
-                  {item}
-                </li>
-              ))}
+              {news.map(
+                (item: { title: string; date: string }, index: number) => (
+                  <li
+                    key={index}
+                    className="bg-white p-4 mb-4 rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col gap-2"
+                  >
+                    <div className="text-gray-800 font-semibold">
+                      {item.title}
+                    </div>
+                    <div className="text-sm text-gray-500 italic">
+                      {item.date}
+                    </div>
+                  </li>
+                )
+              )}
             </ul>
           )}
         </div>
@@ -584,14 +616,21 @@ export default function Home() {
               Timeline News
             </h2>
             <ul className="list-none p-0 m-0">
-              {timelineNews.map((item: string, index: number) => (
-                <li
-                  key={index}
-                  className="bg-white p-3 mb-3 rounded-lg border border-gray-300 shadow-sm hover:scale-102 transition-transform"
-                >
-                  {item}
-                </li>
-              ))}
+              {timelineNews.map(
+                (item: { title: string; date: string }, index: number) => (
+                  <li
+                    key={index}
+                    className="bg-white p-4 mb-4 rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col gap-2"
+                  >
+                    <div className="text-gray-800 font-semibold">
+                      {item.title}
+                    </div>
+                    <div className="text-sm text-gray-500 italic">
+                      {item.date}
+                    </div>
+                  </li>
+                )
+              )}
             </ul>
           </div>
         )}

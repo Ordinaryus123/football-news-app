@@ -6,13 +6,17 @@ import axios from "axios";
 
 // Define the type for the API response
 interface NewsResponse {
-  news: string[]; // Array of news items (strings)
-  error?: string; // Optional error message for failed requests
+  news: { title: string; date: string }[];
+  error?: string;
 }
 
 export default function Timeline() {
-  const [timelineNews, setTimelineNews] = useState<string[]>([]);
-  const [upcomingGames, setUpcomingGames] = useState<string[]>([]);
+  const [timelineNews, setTimelineNews] = useState<
+    { title: string; date: string }[]
+  >([]);
+  const [upcomingGames, setUpcomingGames] = useState<
+    { title: string; date: string }[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch timeline news and upcoming games
@@ -37,7 +41,12 @@ export default function Timeline() {
         setTimelineNews(newsResponse.data.news);
       } else if (newsResponse.data.error) {
         setError(newsResponse.data.error);
-        setTimelineNews(["Couldn’t fetch timeline news."]);
+        setTimelineNews([
+          {
+            title: "Couldn’t fetch timeline news.",
+            date: new Date().toISOString().split("T")[0],
+          },
+        ]);
       }
 
       // Fetch upcoming important European games (simulated with a prompt to xAI)
@@ -60,13 +69,28 @@ export default function Timeline() {
             ? `${prev}\nCouldn’t fetch upcoming games.`
             : "Couldn’t fetch upcoming games."
         );
-        setUpcomingGames(["Couldn’t fetch upcoming games."]);
+        setUpcomingGames([
+          {
+            title: "Couldn’t fetch upcoming games.",
+            date: new Date().toISOString().split("T")[0],
+          },
+        ]);
       }
     } catch (error: any) {
       console.error("Error fetching timeline data:", error);
       setError("Failed to fetch timeline data.");
-      setTimelineNews(["Couldn’t fetch timeline news."]);
-      setUpcomingGames(["Couldn’t fetch upcoming games."]);
+      setTimelineNews([
+        {
+          title: "Couldn’t fetch timeline news.",
+          date: new Date().toISOString().split("T")[0],
+        },
+      ]);
+      setUpcomingGames([
+        {
+          title: "Couldn’t fetch upcoming games.",
+          date: new Date().toISOString().split("T")[0],
+        },
+      ]);
     }
   };
 
@@ -97,14 +121,21 @@ export default function Timeline() {
           <p className="text-gray-500 italic">Loading news...</p>
         ) : (
           <ul className="list-none p-0 m-0">
-            {timelineNews.map((item, index) => (
-              <li
-                key={index}
-                className="bg-white p-3 mb-3 rounded-lg border border-gray-300 shadow-sm hover:scale-102 transition-transform"
-              >
-                {item}
-              </li>
-            ))}
+            {timelineNews.map(
+              (item: { title: string; date: string }, index: number) => (
+                <li
+                  key={index}
+                  className="bg-white p-4 mb-4 rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col gap-2"
+                >
+                  <div className="text-gray-800 font-semibold">
+                    {item.title}
+                  </div>
+                  <div className="text-sm text-gray-500 italic">
+                    {item.date}
+                  </div>
+                </li>
+              )
+            )}
           </ul>
         )}
       </div>
@@ -118,14 +149,21 @@ export default function Timeline() {
           <p className="text-gray-500 italic">Loading games...</p>
         ) : (
           <ul className="list-none p-0 m-0">
-            {upcomingGames.map((game, index) => (
-              <li
-                key={index}
-                className="bg-white p-3 mb-3 rounded-lg border border-gray-300 shadow-sm hover:scale-102 transition-transform"
-              >
-                {game}
-              </li>
-            ))}
+            {upcomingGames.map(
+              (game: { title: string; date: string }, index: number) => (
+                <li
+                  key={index}
+                  className="bg-white p-4 mb-4 rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col gap-2"
+                >
+                  <div className="text-gray-800 font-semibold">
+                    {game.title}
+                  </div>
+                  <div className="text-sm text-gray-500 italic">
+                    {game.date}
+                  </div>
+                </li>
+              )
+            )}
           </ul>
         )}
       </div>

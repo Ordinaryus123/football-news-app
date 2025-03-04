@@ -9,7 +9,7 @@ type Response = globalThis.Response;
 
 // Define the types for the API responses
 interface NewsResponse {
-  news: string[];
+  news: { title: string; date: string }[];
   error?: string;
 }
 
@@ -26,7 +26,7 @@ export default function Subscriptions() {
   const [teams, setTeams] = useState<string[]>([]); // Teams user is following/subscribed
   const [players, setPlayers] = useState<string[]>([]); // Players user is subscribed to
   const [tournaments, setTournaments] = useState<string[]>([]); // Tournaments user is following
-  const [news, setNews] = useState<string[]>([]);
+  const [news, setNews] = useState<{ title: string; date: string }[]>([]);
   const [error, setError] = useState<string | null>(null); // Ensure error is string | null
 
   // Fetch subscriptions from server on load
@@ -73,10 +73,15 @@ export default function Subscriptions() {
         setNews((prevNews) => [...prevNews, ...response.data.news]);
       } else if (response.data.error) {
         setError(response.data.error);
-        setNews((prevNews) => [...prevNews, "Couldn’t fetch news."]);
+        setNews((prevNews) => [
+          ...prevNews,
+          {
+            title: "Couldn’t fetch news.",
+            date: new Date().toISOString().split("T")[0],
+          },
+        ]);
       }
     } catch (error: unknown) {
-      // Use 'unknown' first, then narrow
       if (error instanceof AxiosError) {
         console.error("Error fetching news for subscription:", {
           message: error.message,
@@ -94,7 +99,13 @@ export default function Subscriptions() {
         });
         setError("Failed to fetch news.");
       }
-      setNews((prevNews) => [...prevNews, "Couldn’t fetch news."]);
+      setNews((prevNews) => [
+        ...prevNews,
+        {
+          title: "Couldn’t fetch news.",
+          date: new Date().toISOString().split("T")[0],
+        },
+      ]);
     }
   };
 
@@ -270,14 +281,21 @@ export default function Subscriptions() {
             News for Selected Subscription
           </h2>
           <ul className="list-none p-0 m-0">
-            {news.map((item: string, index: number) => (
-              <li
-                key={index}
-                className="bg-white p-3 mb-3 rounded-lg border border-gray-300 shadow-sm hover:scale-102 transition-transform"
-              >
-                {item}
-              </li>
-            ))}
+            {news.map(
+              (item: { title: string; date: string }, index: number) => (
+                <li
+                  key={index}
+                  className="bg-white p-4 mb-4 rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col gap-2"
+                >
+                  <div className="text-gray-800 font-semibold">
+                    {item.title}
+                  </div>
+                  <div className="text-sm text-gray-500 italic">
+                    {item.date}
+                  </div>
+                </li>
+              )
+            )}
           </ul>
           <div className="text-center mt-4">
             <button
